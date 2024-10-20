@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Latihan Vocab Bahasa Inggris</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        #questionContainer {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        label, select {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        #question {
+            font-size: 20px;
+            margin: 15px 0;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .response, .error {
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .response {
+            color: green;
+        }
+        .error {
+            color: red;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Latihan Vocab Bahasa Inggris</h1>
+    <div>
+        <label for="theme">Pilih Tema:</label>
+        <select id="theme">
+            <option value="verbs">Kata Kerja</option>
+            <option value="adjectives">Kata Sifat</option>
+            <option value="daily">Keseharian</option>
+            <option value="animals">Hewan</option>
+            <option value="jobs">Pekerjaan</option>
+            <option value="weather">Cuaca</option>
+            <option value="food">Makanan</option>
+            <option value="sentences">Kalimat</option>
+            <option value="office_terms">Istilah Kantor</option>
+            <option value="phrases">Frasa</option>
+        </select>
+
+        <label for="language">Ganti Bahasa:</label>
+        <select id="language">
+            <option value="toIndonesian">Inggris ke Indonesia</option>
+            <option value="toEnglish">Indonesia ke Inggris</option>
+        </select>
+        <button id="start">Mulai Belajar</button>
+    </div>
+
+    <div id="questionContainer" class="hidden">
+        <p id="question"></p>
+        <input type="text" id="answer" placeholder="Jawaban Anda">
+        <button id="submit">Kirim</button>
+        <p id="response" class="response"></p>
+        <p id="error" class="error"></p>
+        <button id="next" class="hidden">Pertanyaan Berikutnya</button>
+    </div>
+
+    <script>
+        let currentTheme;
+        let currentQuestionIndex = 0;
+        let currentQuestions = [];
+        let currentLanguage;
+
+        // Memuat data dari JSON
+        fetch('vocab.json')
+            .then(response => response.json())
+            .then(data => {
+                window.vocabData = data; // Simpan data untuk digunakan nanti
+            });
+
+        document.getElementById('start').onclick = function() {
+            currentTheme = document.getElementById('theme').value;
+            currentLanguage = document.getElementById('language').value;
+            currentQuestions = vocabData[currentTheme];
+            currentQuestionIndex = 0;
+            document.getElementById('questionContainer').classList.remove('hidden');
+            showQuestion();
+        };
+
+        document.getElementById('submit').onclick = function() {
+            const userAnswer = document.getElementById('answer').value.trim().toLowerCase();
+            const correctAnswer = currentLanguage === 'toIndonesian' 
+                ? currentQuestions[currentQuestionIndex].answer.toLowerCase() 
+                : currentQuestions[currentQuestionIndex].question.toLowerCase();
+            
+            const response = document.getElementById('response');
+            const error = document.getElementById('error');
+            const nextButton = document.getElementById('next');
+
+            if (userAnswer === correctAnswer) {
+                response.textContent = 'Jawaban Benar!';
+                error.textContent = '';
+                nextButton.classList.remove('hidden');
+                // Panggil fungsi untuk lanjut ke pertanyaan berikutnya
+                setTimeout(() => {
+                    nextQuestion();
+                }, 1000); // 1 detik delay sebelum lanjut
+            } else {
+                response.textContent = '';
+                error.textContent = `Jawaban Salah! Jawaban yang benar adalah "${currentLanguage === 'toIndonesian' ? currentQuestions[currentQuestionIndex].answer : currentQuestions[currentQuestionIndex].question}". Coba lagi.`;
+                nextButton.classList.add('hidden');
+            }
+        };
+
+        // Fungsi untuk melanjutkan ke pertanyaan berikutnya
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < currentQuestions.length) {
+                showQuestion();
+                document.getElementById('next').classList.add('hidden');
+            } else {
+                document.getElementById('response').textContent = 'Selamat! Anda telah menyelesaikan semua pertanyaan di tema ini.';
+                document.getElementById('questionContainer').classList.add('hidden');
+            }
+        }
+
+        function showQuestion() {
+            const questionText = currentLanguage === 'toIndonesian' 
+                ? currentQuestions[currentQuestionIndex].question 
+                : currentQuestions[currentQuestionIndex].answer;
+            document.getElementById('question').textContent = questionText;
+            document.getElementById('answer').value = '';
+            document.getElementById('response').textContent = '';
+            document.getElementById('error').textContent = '';
+
+            // Memutar suara dari teks
+            speak(questionText);
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'en-US'; // Atur bahasa sesuai dengan kebutuhan
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Tambahan event listener untuk menekan Enter
+        document.getElementById('answer').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Mencegah form dari pengiriman
+                document.getElementById('submit').click(); // Memanggil fungsi yang sama seperti tombol "Kirim"
+            }
+        });
+    </script>
+</body>
+</html>
